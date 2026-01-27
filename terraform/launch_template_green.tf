@@ -12,6 +12,7 @@ resource "aws_launch_template" "green_lt" {
         #!/bin/bash
          yum update -y
          amazon-linux-extras install docker -y
+         yum install -y amazon-cloudwatch-agent
          systemctl start docker
          systemctl enable docker
 

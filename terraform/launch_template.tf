@@ -21,6 +21,7 @@ user_data = base64encode(<<-EOF
         #!/bin/bash
          yum update -y
          amazon-linux-extras install docker -y
+         yum install -y amazon-cloudwatch-agent
          systemctl start docker
          systemctl enable docker
 
