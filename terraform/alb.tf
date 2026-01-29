@@ -39,4 +39,4 @@ resource "aws_lb_listener" "http" {
     target_group_arn = aws_lb_target_group.blue_tg.arn       
   }
 }
-#target_group_arn = aws_lb_target_group.green_tg.arn (green deplyment)
+#target_group_arn = aws_lb_target_group.green_tg.arn (green deplyment) change this to the blue
