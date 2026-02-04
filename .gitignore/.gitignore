@@ -1,19 +1,16 @@
-# Node
+# dependencies
 node_modules/
 
-# Terraform
-.terraform/
-terraform.tfstate
-terraform.tfstate.backup
-*.tfvars
-*.exe
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# OS / Editor
-.DS_Store
-Thumbs.db
+# environment
+.env
 
-# Logs
-*.log
+# docker
+.dockerignore
 
-# Binaries
-*.exe
+# git
+.git
