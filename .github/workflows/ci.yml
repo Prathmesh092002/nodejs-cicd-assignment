@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  IMAGE_NAME: myapp
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -21,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd app
-          npm install
+          npm ci
 
       - name: Lint
         run: |
@@ -37,3 +40,64 @@ jobs:
         run: |
           cd app
           npm run build
+
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine active environment
+        id: color
+        run: |
+          if ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "docker ps --format '{{.Names}}' | grep app-blue"; then
+            echo "target=green" >> $GITHUB_OUTPUT
+            echo "port=3002" >> $GITHUB_OUTPUT
+          else
+            echo "target=blue" >> $GITHUB_OUTPUT
+            echo "port=3001" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t $IMAGE_NAME:${{ steps.color.outputs.target }} .
+          docker tag $IMAGE_NAME:${{ steps.color.outputs.target }} \
+            ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:${{ steps.color.outputs.target }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:${{ steps.color.outputs.target }}
+
+      - name: Deploy new version
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << EOF
+            docker pull ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:${{ steps.color.outputs.target }}
+            docker compose up -d app-${{ steps.color.outputs.target }}
+          EOF
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.SERVER_IP }}:${{ steps.color.outputs.port }}/health
+
+      - name: Switch traffic
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << EOF
+            sed -i 's/app-blue/app-green/' /etc/nginx/conf.d/app.conf
+            nginx -s reload
+          EOF
+
+      - name: Stop old container
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << EOF
+            docker stop app-blue || docker stop app-green || true
+          EOF
