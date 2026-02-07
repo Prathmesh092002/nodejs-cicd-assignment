@@ -72,8 +72,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t $IMAGE_NAME:${{ steps.color.outputs.target }} .
-          docker tag $IMAGE_NAME:${{ steps.color.outputs.target }} \
+          docker build -t prathmesh1416/nodejs-app:latest:${{ steps.color.outputs.target }} .
+          docker tag prathmesh1416/nodejs-app:latest:${{ steps.color.outputs.target }} \
             ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:${{ steps.color.outputs.target }}
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:${{ steps.color.outputs.target }}
 
